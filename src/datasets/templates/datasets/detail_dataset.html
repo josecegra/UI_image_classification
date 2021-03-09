@@ -1,0 +1,51 @@
+{% extends "datasets/base.html"%}
+
+{% load crispy_forms_tags %}
+
+{% load static %}
+ 
+{% block content %}
+
+<form action="" method="post">
+  {% csrf_token %}
+  <input type="submit" class="btn btn-secondary" name="back" value="Back to datasets"></input>
+</form>
+
+<h1>{{experiment.name}}</h1>
+
+{% if cat_list %}
+  {% for cat in cat_list %}
+    <div class="list-group">
+      <a href="/datasets/{{experiment.id}}/{{cat.category}}" class="list-group-item list-group-item-action">{{cat.category}}: {{cat.n_images}}</a>
+    </div>
+  {% endfor %}
+
+{% endif %}
+
+
+{% comment %}
+<p>{{message}}</p>
+
+{% if img_list %}
+  <div class="container">
+    <div class="row">
+      {% for img in img_list %}
+        <div class="col">
+          <a href="{{ img.id }}/">
+              <img class="img-fluid" src="{{img.img_url}}" alt="asdf" width="400">
+          </a>
+        </div>
+        {% if forloop.counter0 == 3 %}
+            <div class="w-100"></div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+{% endif %}
+
+{% endcomment %}
+
+
+
+
+{% endblock %}
