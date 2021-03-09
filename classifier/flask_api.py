@@ -33,11 +33,27 @@ if __name__=="__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_path', required=True)
     parser.add_argument('--class_index_path', required=True)
-    parser.add_argument('--endpoint_name', required=True)
-    parser.add_argument('--host', required=True)
-    parser.add_argument('--port', required=True)
+    parser.add_argument('--endpoint_name', required=False)
+    parser.add_argument('--host', required=False)
+    parser.add_argument('--port', required=False)
     parser.add_argument('--saving_dir', required=False)
     args = parser.parse_args()
+
+
+    if args.endpoint_name:
+        endpoint_name = args.endpoint_name
+    else:
+        endpoint_name = 'classifier'
+
+    if args.port:
+        port = int(args.port)
+    else:
+        port = 5050
+
+    if args.host:
+        host = args.host
+    else:
+        host = '0.0.0.0'
 
     if args.saving_dir:
         saving_dir = args.saving_dir

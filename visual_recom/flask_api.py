@@ -17,6 +17,7 @@ from sklearn.preprocessing import normalize
 from PIL import Image
 import numpy as np
 import json
+import argparse
 
 def load_model(model_path,data_path,embeddings_path,n_neighbors):
 
@@ -86,17 +87,46 @@ def load_model(model_path,data_path,embeddings_path,n_neighbors):
 
 
 if __name__=="__main__":
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--model_path', required=True)
+    parser.add_argument('--embeddings_path', required=True)
+    parser.add_argument('--data_path', required=True)
+    parser.add_argument('--n_neighbors', required=False)
+
+    parser.add_argument('--endpoint_name', required=False)
+    parser.add_argument('--host', required=False)
+    parser.add_argument('--port', required=False)
+    args = parser.parse_args()
+
+    if args.endpoint_name:
+        endpoint_name = args.endpoint_name
+    else:
+        endpoint_name = 'img_recommendation'
+
+    if args.port:
+        port = int(args.port)
+    else:
+        port = 5000
+
+    if args.host:
+        host = args.host
+    else:
+        host = '0.0.0.0'
+
+    if args.n_neighbors:
+        n_neighbors = int(args.n_neighbors)
+    else:
+        n_neighbors = 20
+
     
-    endpoint_name = 'img_recommendation'
-    port = 5000
-    host = '0.0.0.0'
+    #n_neighbors = 20
+    #model_path = '/home/jcejudo/visual_recommendation/model_3000.pth'
+    #embeddings_path = '/home/jcejudo/visual_recommendation/embeddings_3000.csv'
 
-    n_neighbors = 20
-    model_path = '/home/jcejudo/visual_recommendation/model_3000.pth'
-    embeddings_path = '/home/jcejudo/visual_recommendation/embeddings_3000.csv'
-    data_path = '/home/jcejudo/interface_dataset/visualization/static/training_data_3000'
+    #data_path = '/home/jcejudo/interface_dataset/visualization/static/training_data_3000'
 
-    model,filenames,indices,distances = load_model(model_path,data_path,embeddings_path,n_neighbors)
+    model,filenames,indices,distances = load_model(args.model_path,args.data_path,args.embeddings_path,n_neighbors)
 
     app = Flask(__name__)
 
