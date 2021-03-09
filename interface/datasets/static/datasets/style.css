@@ -1,0 +1,22 @@
+.short-width {
+    background-color: rgb(239, 245, 241);
+    max-width: 15em;
+  }
+
+.long-width {
+background-color: rgb(239, 245, 241);
+max-width: 30em;
+}
+
+
+
+.column {
+float: left;
+width: 30%;
+}
+
+.row:after {
+content: "";
+display: table;
+clear: both;
+}
