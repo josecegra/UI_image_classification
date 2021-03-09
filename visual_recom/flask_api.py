@@ -89,6 +89,7 @@ if __name__=="__main__":
     
     endpoint_name = 'img_recommendation'
     port = 5000
+    host = '0.0.0.0'
 
     n_neighbors = 20
     model_path = '/home/jcejudo/visual_recommendation/model_3000.pth'
@@ -122,6 +123,6 @@ if __name__=="__main__":
         if request.method == 'GET':
             return jsonify({})
 
-    app.run(host='0.0.0.0', port=port)
+    app.run(host=host, port=port)
 
 

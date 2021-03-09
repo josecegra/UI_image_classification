@@ -10,14 +10,15 @@ from django.core.files import File
 from visualization.settings import MEDIA_ROOT
 import mimetypes
 
-#from .api_wrapper import ModelAPI
-from .recom_api_wrapper import RecomAPI
+
 
 import sys
 
-sys.path.append(  '/home/jcejudo/UI_image_classification/classifier/')
-
+sys.path.append('/home/jcejudo/UI_image_classification/classifier/')
 from predict import ModelAPI
+
+sys.path.append('/home/jcejudo/UI_image_classification/visual_recom/')
+from requ import ModelAPI as RecomAPI
 
 
 category_list = ['building','ceramics']
@@ -187,22 +188,22 @@ def detail_image(request, dt_id,category,img_id):
             img_path = os.path.join(dataset.images_path,category,img.filename)
 
             pred_dict = model.predict(img_path)
+            if pred_dict:
 
-            #print(pred_dict)
-            recom_images = []
-            for path in pred_dict['fnames']:
-                
-                fname = os.path.split(path)[1]
-                for img in ImageModel.objects.filter(filename = fname):
-                    recom_images.append(img)
-                    break
+                recom_images = []
+                for path in pred_dict['fnames']:
+                    
+                    fname = os.path.split(path)[1]
+                    for img in ImageModel.objects.filter(filename = fname):
+                        recom_images.append(img)
+                        break
 
-            eu_id_list = []
-            for img in recom_images:
-                eu_id_list.append(img.filename.replace('[ph]','/').replace('.jpg',''))
+                eu_id_list = []
+                for img in recom_images:
+                    eu_id_list.append(img.filename.replace('[ph]','/').replace('.jpg',''))
 
 
-            context.update({'recom_imgs':zip(eu_id_list,recom_images)})
+                context.update({'recom_imgs':zip(eu_id_list,recom_images)})
 
 
 
