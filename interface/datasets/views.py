@@ -9,9 +9,7 @@ from shutil import copyfile
 from django.core.files import File
 from visualization.settings import MEDIA_ROOT
 import mimetypes
-
-
-
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 import sys
 
 sys.path.append('/home/jcejudo/UI_image_classification/classifier/')
@@ -22,7 +20,6 @@ from requ import ModelAPI as RecomAPI
 
 
 category_list = ['building','ceramics']
-
 
 def get_images(images_path,dataset):
     dest_path = MEDIA_ROOT
@@ -43,27 +40,14 @@ def get_images(images_path,dataset):
 class DatasetsMainView(TemplateView):
     template_name = 'datasets/datasets.html'
     def get(self,request):
-
-
-
-        #username = request.user.username
         dataset_list = DatasetModel.objects.all()
-        #public_dataset_list = DatasetModel.objects.filter(username = 'public')
         context = {'dataset_list':dataset_list,'public_dataset_list':None}
-
-        #context = {'category_list':category_list}
-
-
-
         context.update({'nbar':'datasets','logged':True})
         return render(request, self.template_name,context)
 
 def detail_dataset(request, ex_id):
     dataset = get_object_or_404(DatasetModel, pk=ex_id)
-    #img_list = dataset.img_list.all()
-
     img_list = ImageModel.objects.filter(dataset = ex_id)
-
     categories = dataset.categories.split(' ')
     
     cat_list = []
@@ -71,9 +55,6 @@ def detail_dataset(request, ex_id):
         n_images = ImageModel.objects.filter(dataset = ex_id,category = cat).count
         cat_list.append({'category':cat,'n_images':n_images})
     
-
-    
-
     message = ''
     context = {'cat_list':cat_list,'n_images':n_images,'experiment': dataset,'message':message,'img_list':img_list}
     if request.method == 'POST':
@@ -90,14 +71,11 @@ def detail_dataset(request, ex_id):
 
 
 
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-
 def category_view(request,dataset,category):
 
     if request.method == 'POST':
         if 'back' in request.POST:
             return redirect(f'/datasets/{dataset}')
-
 
     dataset = get_object_or_404(DatasetModel, pk=dataset)
     img_obj_list = ImageModel.objects.filter(dataset = dataset.id,category = category)[:]
@@ -128,12 +106,8 @@ def category_view(request,dataset,category):
     # Get our new page range. In the latest versions of Django page_range returns 
     # an iterator. Thus pass it to list, to make our slice possible again.
     page_range = list(paginator.page_range)[start_index:end_index]
-
     context = {}
-
     context.update({'page_range':page_range,'img_list':img_list,'category':category,'dataset_id': dataset.id})
-
-
     return render(request, 'datasets/category.html',context)
 
 
@@ -144,55 +118,30 @@ def detail_image(request, dt_id,category,img_id):
     europeana_id = id_enc.replace('[ph]','/')
     context = {'img': img,'dataset':dataset,'category':category,'europeana_id':europeana_id}
     if request.method == 'POST':
-        if 'XAI' in request.POST:
-            message = 'XAI should happen'
-            context.update({'message':message})
-            return render(request, 'datasets/detail_image.html', context)
-        elif 'refresh' in request.POST:
-            context = {'img': img}
-            return render(request, 'datasets/detail_image.html', context)
-        elif 'board' in request.POST:
+
+        if 'board' in request.POST:
             return redirect(f'/datasets/{dt_id}/{category}')
-        elif 'delete' in request.POST:
-            ImageModel.objects.filter(id=img_id).delete()
-            return redirect(f'/datasets/{dt_id}')
 
         elif 'predict' in request.POST:
-            
-
-            #torch_model = experiment.torch_model
-            #img_path = img.img_file.path
-       
             model_wrapper = ModelAPI('0.0.0.0','classifier',5050)
-
             img_path = os.path.join(dataset.images_path,category,img.filename)
             pred_dict = model_wrapper.predict(img_path,XAI=True)
-
             if pred_dict:
-
                 for fname in pred_dict['XAI_path'].keys():
                     pass
-                #XAI_path = pred_dict['XAI_path'][fname]
+
                 class_name = pred_dict['class_name'][fname]
                 conf = round(pred_dict['confidence'][fname],3)
-
                 XAI_url = f'/static/XAI/{fname}'
-
                 context.update({'class':class_name,'XAI_url':XAI_url,'conf':conf})
-
-                print(pred_dict)
 
         elif 'recommend' in request.POST:
             model = RecomAPI('img_recommendation',port = 5000)
-
             img_path = os.path.join(dataset.images_path,category,img.filename)
-
             pred_dict = model.predict(img_path)
             if pred_dict:
-
                 recom_images = []
                 for path in pred_dict['fnames']:
-                    
                     fname = os.path.split(path)[1]
                     for img in ImageModel.objects.filter(filename = fname):
                         recom_images.append(img)
@@ -202,139 +151,16 @@ def detail_image(request, dt_id,category,img_id):
                 for img in recom_images:
                     eu_id_list.append(img.filename.replace('[ph]','/').replace('.jpg',''))
 
-
                 context.update({'recom_imgs':zip(eu_id_list,recom_images)})
 
-
-
-        if 'download' in request.POST:
-            img = get_object_or_404(ImageModel, pk=img_id)
-            img_path = img.img_file.path
-            fl = open(img_path, 'rb')
-            mime_type, _ = mimetypes.guess_type(img_path)
-            response = HttpResponse(fl, content_type=mime_type)
-            response['Content-Disposition'] = "attachment; filename=%s" % os.path.split(img_path)[1]
-            return response
+        # if 'download' in request.POST:
+        #     img = get_object_or_404(ImageModel, pk=img_id)
+        #     img_path = img.img_file.path
+        #     fl = open(img_path, 'rb')
+        #     mime_type, _ = mimetypes.guess_type(img_path)
+        #     response = HttpResponse(fl, content_type=mime_type)
+        #     response['Content-Disposition'] = "attachment; filename=%s" % os.path.split(img_path)[1]
+        #     return response
 
     context.update({'nbar':'datasets','logged':True})
     return render(request, 'datasets/detail_image.html', context)
-
-
-
-def create_dataset(request):
-    #username = request.user.username
-    if request.method == "POST":
-        if 'cancel' in request.POST:
-            return redirect('/datasets/')
-
-        form = DatasetForm(request.POST, request.FILES)
-        if form.is_valid():
-
-
-
-            obj = DatasetModel() 
-            obj.name = form.cleaned_data['name']
-            #obj.problem_type = form.cleaned_data['problem_type']
-            obj.images_path = form.cleaned_data['images_path']
-
-
-            obj.save()
-
-            images_path = form.cleaned_data['images_path']
-            img_list = []
-            if images_path and os.path.exists(images_path):
-                img_list = get_images(images_path,obj)
-            #obj.annotations_path = form.cleaned_data['annotations_path']
-            #obj.annotations_upload = form.cleaned_data['annotations_upload']
-
-            # if obj.is_public:
-            #     obj.username = 'public'
-            # else:
-            #     obj.username = username
-            
-            #obj.id = len(DatasetModel.objects.all())+1
-
-            #obj.save()
-            
-            # for img in img_list:
-            #     obj.img_list.add(img.id)
-
-            #obj.save()
-
-            
-
-            
-            return HttpResponseRedirect(f'/datasets/{obj.id}')
-    else:
-        form = DatasetForm()
-    context = {'form':form}
-    context.update({'nbar':'datasets','logged':True})
-    return render(request, 'datasets/create_dataset.html',context)
-
-def edit_dataset(request,ex_id):
-    username = request.user.username
-    dataset = get_object_or_404(DatasetModel, pk=ex_id)
-    if request.method == "POST":
-        if 'cancel' in request.POST:
-            return redirect(f'/datasets/{ex_id}')
-
-        form = DatasetForm(request.POST, request.FILES)
-        if form.is_valid():
-
-            images_path = form.cleaned_data['images_path']
-            img_list = []
-            if images_path and os.path.exists(images_path):
-                img_list = get_images(images_path)
-
-            #obj = DatasetModel() 
-            dataset.name = form.cleaned_data['name']
-            dataset.problem_type = form.cleaned_data['problem_type']
-            dataset.images_path = form.cleaned_data['images_path']
-            dataset.annotations_path = form.cleaned_data['annotations_path']
-            dataset.annotations_upload = form.cleaned_data['annotations_upload']
-
-            if dataset.is_public:
-                dataset.username = 'public'
-            else:
-                dataset.username = username
-            #obj.save()
-
-            for img in img_list:
-                dataset.img_list.add(img.id)
-            form.instance = dataset
-            form.save()
-            return HttpResponseRedirect(f'/datasets/{dataset.id}')
-    else:
-        form = DatasetForm(instance=dataset)
-        #form.fields['name'] = dataset.name
-    context = {'form':form,'dataset':dataset}
-    context.update({'nbar':'datasets','logged':True})
-    return render(request, 'datasets/edit_dataset.html',context)
-
-
-
-
-
-
-# get images when the path is set
-
-    # def post(self,request):
-    #     username = request.user.username
-    #     fs = FileSystemStorage()
-    #     media_dir = os.path.join(settings.BASE_DIR,'media')
-    #     path = request.POST.get('path')
-    #     if path:
-    #         for i,filename in enumerate(os.listdir(path)):
-                
-    #             src_file_path = os.path.join(path,filename)
-    #             dest_file_path = os.path.join(media_dir,filename)
-    #             copyfile(src_file_path,dest_file_path)
-
-    #             myfile = fs.open(dest_file_path)  
-    #             uploaded_file_url = fs.url(dest_file_path)          
-    #             Doc.objects.create(upload = myfile, image_url = uploaded_file_url, user=username)
-    #         message = f'Added {i} images'
-    #     else:
-    #         message = 'Empty path entered'
-    #     context = {'message':message}
-    #     return render(request, self.template_name,context)

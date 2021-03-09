@@ -76,6 +76,6 @@ if __name__=="__main__":
         if request.method == 'GET':
             return jsonify({'class_index_dict': class_index_dict})
 
-    app.run(host=args.host, port=int(args.port))
+    app.run(host=host, port=port)
 
 
